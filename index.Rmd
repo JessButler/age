@@ -1,5 +1,5 @@
 ---
-title: "Age in Aberdeen"
+title: "People 70 or Older in Aberdeen"
 
 output:
   flexdashboard::flex_dashboard:
@@ -11,15 +11,14 @@ output:
 library(here)
 library(tidyverse)
 library(sf)
-library(mapview)
 library(flexdashboard)
 library(gt)
+library(mapview)
 ```
 
 
 ```{r}
-#load SIMD data and shapefiles 
-#age 90 is for 90 years and older!
+#load data and shapefiles 
 
 age_all <- read_csv(here("data", "sape-2018-persons.csv"))
 
@@ -27,14 +26,28 @@ age_f <- read_csv(here("data", "sape-2018-females.csv"))
 
 age_m <- read_csv(here("data", "sape-2018-males.csv"))
 
+simd <- read_csv(here("data", "SIMD+2020v2+-+datazone+lookup.csv"))
+
 datazone_sf <- st_read(here("data", "sc_dz_11.shp"), quiet = T)
 ```
 
 ```{r}
-#summarise age bands
+#new variable sum all under 5 and under 10
+
+age_all <- rename(age_all, age_90 = "age_90+")
+
+age_all <-
+  age_all %>%
+  mutate(
+    under_5 = rowSums(select(., age_0:age_4)), 
+    perc_under_5 = round(under_5/total_population *100, 0),
+    under_10 = rowSums(select(., age_0:age_9)), 
+    perc_under_10 = round(under_10/total_population *100, 0),
+    over_70 = rowSums(select(., age_70:age_90)),
+    perc_over_70 = round(over_70/total_population * 100, 0),
+    )
 
 ```
-
 
 
 ```{r}
@@ -45,12 +58,19 @@ aberdeen_age_all <-
   age_all %>%
   filter(council_area == "Aberdeen City")
 
-aberdeen_data_zones <- pull(aberdeen_age_all, data_zone)
+aberdeen_simd <-
+  simd %>%
+  filter(LAname == "Aberdeen City")
+
+aberdeen <- 
+  full_join(aberdeen_simd, aberdeen_age_all, by = c("DZ" = "data_zone"))
+
+aberdeen_data_zones <- pull(aberdeen, DZ)
 
 aberdeen_sf <- filter(datazone_sf, DataZone %in% aberdeen_data_zones)
 
 aberdeen_sf <-
-  merge(aberdeen_sf, aberdeen_age_all, by.x = "DataZone", by.y = "data_zone")
+  merge(aberdeen_sf, aberdeen, by.x = "DataZone", by.y = "DZ")
 
 ```
 
@@ -64,24 +84,36 @@ Row {data-height=650}
 aberdeen_sf %>% 
   mapview(
     map.types = "OpenStreetMap", 
-    zcol = "total_population", 
-    label = aberdeen_sf$name,
-    layer.name = "population (%)")
+    zcol = "perc_over_70", 
+    label = aberdeen_sf$Name,
+    layer.name = "over 70 (%)",
+    alpha.regions = 0.8
+    )
 ```
 
 
 ###
 
 ```{r}
-#
+#table areas with highest fraction of population age 70 and over
 
-aberdeen_age_all %>%
-  filter( >= 30) %>%
-  arrange(Intermediate_Zone) %>%
+aberdeen %>%
+  select(DZ, IZname, total_population, perc_over_70, SIMD2020v2_Decile) %>%
+  filter(perc_over_70 > 20) %>%
+  arrange(SIMD2020v2_Decile) %>%
   gt() %>%
-  tab_header(title = "Most overcrowded", subtitle = "Areas with at least 30% living in overcrowded homes") %>%
-  cols_label(Data_Zone = "Data Zone", Intermediate_Zone = "Area", Total_population = "Population", overcrowded_rate = "Overcrowded (%)")
+  tab_header(
+    title = "Most Older People", 
+    subtitle = "Areas with >20% of population age 70+, by most deprived") %>%
+  cols_label(
+    IZname = "Area", 
+    total_population = "Population", 
+    perc_over_70 = "age 70+ (%)",
+    SIMD2020v2_Decile = "SIMD")  %>%
+  tab_options(container.height = 400)
 ```
+
+
 
 Row
 -------------------------------------
@@ -90,7 +122,9 @@ Row
 
 2018 Small Area Population Estimates from National Records Scotland
 
-Data from https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/population/population-estimates/2011-based-special-area-population-estimates/small-area-population-estimates/time-series#2018
+Age data from https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/population/population-estimates/2011-based-special-area-population-estimates/small-area-population-estimates/time-series#2018
+
+Scottish Index of Multiple Deprivation data from https://www.gov.scot/publications/scottish-index-of-multiple-deprivation-2020v2-data-zone-look-up/
 
 Map shapefiles from https://data.gov.uk/dataset/ab9f1f20-3b7f-4efa-9bd2-239acf63b540/data-zone-boundaries-2011
 
