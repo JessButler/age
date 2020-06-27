@@ -106,7 +106,6 @@ aberdeen %>%
     title = "Most Older People", 
     subtitle = "Areas with >20% of population age 70+, by most deprived") %>%
   cols_label(
-    DZ = "Data Zone",
     IZname = "Area", 
     total_population = "Population", 
     perc_over_70 = "age 70+ (%)",
