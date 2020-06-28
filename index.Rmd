@@ -1,5 +1,5 @@
 ---
-title: "People 70 or Older in Aberdeen"
+title: "Age in Aberdeen"
 
 output:
   flexdashboard::flex_dashboard:
@@ -12,8 +12,11 @@ library(here)
 library(tidyverse)
 library(sf)
 library(flexdashboard)
-library(gt)
 library(mapview)
+library(gt)
+library(cowplot)
+
+theme_set(theme_cowplot())
 ```
 
 
@@ -32,7 +35,7 @@ datazone_sf <- st_read(here("data", "sc_dz_11.shp"), quiet = T)
 ```
 
 ```{r}
-#new variable sum all under 5 and under 10
+#new variables for age groups
 
 age_all <- rename(age_all, age_90 = "age_90+")
 
@@ -46,8 +49,29 @@ age_all <-
     over_70 = rowSums(select(., age_70:age_90)),
     perc_over_70 = round(over_70/total_population * 100, 0),
     )
-
 ```
+
+```{r}
+# sum ages
+
+council_ages <-
+age_all %>%
+  group_by(council_area) %>%
+  summarise_at(vars(age_0:age_90), funs(sum))
+
+long_council_ages <-
+council_ages %>%
+  pivot_longer(-council_area, names_to = "age", values_to = "population") %>%
+  mutate(age = as.numeric(str_remove(age, "age_")))
+  
+  
+# ggplot(data = filter(long_council_ages, council_area %in% c("Aberdeen City", "Aberdeenshire", "Moray"), age <90), aes(age, population)) + 
+#   geom_line(aes(color = council_area), size = 2) +
+#   scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+#   theme(legend.title = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position="bottom", plot.title = element_text(hjust = 0.5)) +
+#   ggtitle("Age in Grampian Councils")
+```
+
 
 
 ```{r}
@@ -75,7 +99,10 @@ aberdeen_sf <-
 ```
 
 
-Row {data-height=650}
+Areas with high density people age 70+
+=====================================
+
+Row
 -------------------------------------
 
 ###
@@ -115,10 +142,54 @@ aberdeen %>%
 
 
 
+Areas with high density children under 5
+=====================================
+
 Row
 -------------------------------------
 
-### Source Notes
+###
+
+```{r}
+aberdeen_sf %>% 
+  mapview(
+    map.types = "OpenStreetMap", 
+    zcol = "perc_under_5", 
+    label = aberdeen_sf$Name,
+    layer.name = "under 5 (%)",
+    alpha.regions = 0.8
+    )
+```
+
+
+###
+
+```{r}
+#table areas with highest fraction of population under age 5
+
+aberdeen %>%
+  select(DZ, IZname, total_population, perc_under_5, SIMD2020v2_Decile) %>%
+  filter(perc_under_5 > 7) %>%
+  arrange(SIMD2020v2_Decile) %>%
+  gt() %>%
+  tab_header(
+    title = "Most Young Children", 
+    subtitle = "Areas with >7% of population under 5, by most deprived") %>%
+  cols_label(
+    IZname = "Area", 
+    total_population = "Population", 
+    perc_under_5 = "under 5 (%)",
+    SIMD2020v2_Decile = "SIMD")  %>%
+  tab_options(container.height = 400)
+```
+
+
+Sources
+=====================================
+
+Row
+-------------------------------------
+###
 
 2018 Small Area Population Estimates from National Records Scotland
 
@@ -129,3 +200,5 @@ Scottish Index of Multiple Deprivation data from https://www.gov.scot/publicatio
 Map shapefiles from https://data.gov.uk/dataset/ab9f1f20-3b7f-4efa-9bd2-239acf63b540/data-zone-boundaries-2011
 
 Code at https://github.com/JessButler/age
+
+
