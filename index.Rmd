@@ -99,7 +99,7 @@ aberdeen_sf <-
 ```
 
 
-Areas with high density people age 70+
+Areas with most people age 70+
 =====================================
 
 Row
@@ -133,6 +133,7 @@ aberdeen %>%
     title = "Most Older People", 
     subtitle = "Areas with >20% of population age 70+, by most deprived") %>%
   cols_label(
+    DZ = "Data Zone",
     IZname = "Area", 
     total_population = "Population", 
     perc_over_70 = "age 70+ (%)",
@@ -142,7 +143,7 @@ aberdeen %>%
 
 
 
-Areas with high density children under 10
+Areas with most children under 10
 =====================================
 
 Row
@@ -176,6 +177,7 @@ aberdeen %>%
     title = "Most Young Children", 
     subtitle = "Areas with >15% of population under 10, by most deprived") %>%
   cols_label(
+    DZ = "Data Zone",
     IZname = "Area", 
     total_population = "Population", 
     perc_under_10 = "under 10 (%)",
