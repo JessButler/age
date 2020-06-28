@@ -142,7 +142,7 @@ aberdeen %>%
 
 
 
-Areas with high density children under 5
+Areas with high density children under 10
 =====================================
 
 Row
@@ -154,9 +154,9 @@ Row
 aberdeen_sf %>% 
   mapview(
     map.types = "OpenStreetMap", 
-    zcol = "perc_under_5", 
+    zcol = "perc_under_10", 
     label = aberdeen_sf$Name,
-    layer.name = "under 5 (%)",
+    layer.name = "under 10 (%)",
     alpha.regions = 0.8
     )
 ```
@@ -165,20 +165,20 @@ aberdeen_sf %>%
 ###
 
 ```{r}
-#table areas with highest fraction of population under age 5
+#table areas with highest fraction of population under age 10
 
 aberdeen %>%
-  select(DZ, IZname, total_population, perc_under_5, SIMD2020v2_Decile) %>%
-  filter(perc_under_5 > 7) %>%
+  select(DZ, IZname, total_population, perc_under_10, SIMD2020v2_Decile) %>%
+  filter(perc_under_10 > 15) %>%
   arrange(SIMD2020v2_Decile) %>%
   gt() %>%
   tab_header(
     title = "Most Young Children", 
-    subtitle = "Areas with >7% of population under 5, by most deprived") %>%
+    subtitle = "Areas with >15% of population under 10, by most deprived") %>%
   cols_label(
     IZname = "Area", 
     total_population = "Population", 
-    perc_under_5 = "under 5 (%)",
+    perc_under_10 = "under 10 (%)",
     SIMD2020v2_Decile = "SIMD")  %>%
   tab_options(container.height = 400)
 ```
